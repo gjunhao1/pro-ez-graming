@@ -85,19 +85,19 @@ df = pd.merge(df, cat_class_json, on = "StkISN", how="left")
     # SGD       12
     # US         5
     # ['US$' 'SIN' 'S$' 'M$' nan 'US' 'SGD' 'USD']
-df["Cur"] = df["Cur"].map({"SIN":"S$", "S$":"S$", "US$":"USD$", "M$":"M$", "USD":"USD$", "SGD":"S$", "US":"USD$"})
-# print(df["Cur"].value_counts())
+df["Cur"] = df["Cur"].replace(["SIN","SGD"],"S$")
+df["Cur"] = df["Cur"].replace(["US$", "USD", "US"],"USD$")
+print(df["Cur"].value_counts())
     # S$      51996
     # USD$     2456
     # M$       1300
     # Tallied successfully with previous data. To account for 334 missing values.
 df["Cur"].fillna("S$", inplace = True)
-# print(df["Cur"].value_counts())
+print(df["Cur"].value_counts())
     # S$      52330
     # USD$     2456
     # M$       1300
     # Tallied with all len(df) = 56086
-
 
 
 
@@ -113,6 +113,9 @@ df["Cur"].fillna("S$", inplace = True)
 # KIV---
 # Consider removing 'RefNo', 'SNO', 'TUPrice' columns if they are not helpful for analysis.
 # Can consider checking if we are incurring a lot of foreign exchange losses as a result of conversion.
+
+# "Cur" column
+# df["Cur"] = df["Cur"].map({"SIN":"S$", "S$":"S$", "US$":"USD$", "M$":"M$", "USD":"USD$", "SGD":"S$", "US":"USD$"})
 
 
 # JSON way ---
