@@ -8,8 +8,9 @@ os.chdir("C:\\BC0401 - Project\\BC0401-Project")
 import pandas as pd
 df = pd.read_excel("stockcards.xlsx")
 
-# Key information of file
+# Key information of file ==============================================================================================
 # print(df.index) #RangeIndex(start=0, stop=56086, step=1)
+# print(len(df)) # 56086 rows
 # print(df.dtypes)
 # Date             datetime64[ns]
 # Type                     object
@@ -34,16 +35,50 @@ df = pd.read_excel("stockcards.xlsx")
 # 75%        17.400000    1519.030000    -217.500000    -154.000000
 # max    320771.530000  320771.530000   67360.810000   18420.320000
 
+# print(df.isnull().sum()) # Number of NA values
+# Date               0
+# Type               0
+# RefNo              0
+# SNO                0
+# Cur              334
+# TUPrice          264
+# ODAmt            264
+# Amt              264
+# Worth            264
+# Customer Code    546
+# StkISN           544
+# dtype: int64
 
-# with open("stockcards.xlsx", "r") as stock_cards:
-#     for each in stock_cards:
-#         print(each)
+# Joining .JSON file ===================================================================================================
+cat_class_json = pd.read_json('cat_class.json')
+cat_class_json.rename(columns={'StockISN':'StkISN'}, inplace=True)
+# print(cat_class_json)
+df = pd.merge(df, cat_class_json, on = "StkISN", how="left")
+print(df)
+
+# Data Cleaning ========================================================================================================
+# KIV---
+# Consider removing 'RefNo', 'SNO', 'TUPrice' columns if they are not helpful for analysis.
+# Can consider checking if we are incurring a lot of foreign exchange losses as a result of conversion.
+
+# Individual columns---
+# 1. "Type"
+# print(df["Type"].unique()) # ['ICG', 'ICX']
+# print(df["Type"].value_counts())
+# ['ICG' 'ICX']
+# ICG    51745
+# ICX     4341
+# Name: Type, dtype: int64
+# A : There are 51745 ICG and 4341 ICX transaction types = 56086 total values. Thus, there are 0 NA values and no other values to be ignored.
 
 
-# JSON
+
+# Archive ==============================================================================================================
+# JSON way ---
 # import json
-# with open('cat_class.json') as f:
-#     data = json.load(f)
+# with open('cat_class.json') as cat_class_json:
+#     data = json.load(cat_class_json)
 #
+# # File has 2 keys, 'StockISN' and 'CatCode'
 # for i in data:
-#     print(i['StockISN'], i['CatCode'])
+#     print(i)
