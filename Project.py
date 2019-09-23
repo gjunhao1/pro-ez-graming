@@ -109,7 +109,7 @@ df["Customer Code"] = df['Customer Code'].str.upper()
 # print(df["Customer Code"].value_counts())
 # IJ01       7665
 # IT23       6632
-# WALK IN    4864
+# CASH       4864
 # IG01       4194
 # IT04       3271
 #            ...
@@ -122,12 +122,6 @@ df["Customer Code"] = df['Customer Code'].str.upper()
 # Creating a new column to explicitly reflect customer's geographical location.
 df["Country"] = df["Customer Code"].str[0:1]
 df["Country"] = df["Country"].map({"A":"Australia","F":"Finland","I":"Indonesia","M":"Malaysia","S":"Singapore","C":"Non-Regular"})
-# df["Country"] = df["Country"].replace([["A"], "Australia"])
-# df["Country"] = df["Country"].replace([["F"], "Finland"])
-# df["Country"] = df["Country"].replace([["I"], "Indonesia"])
-# df["Country"] = df["Country"].replace([["M"], "Malaysia"])
-# df["Country"] = df["Country"].replace([["S"], "Singapore"])
-# df["Country"] = df["Country"].replace([["C"], "Non-Regular"])
 # print(df["Country"].value_counts())
     # Indonesia      46764
     # Non-Regular     4876
@@ -136,8 +130,8 @@ df["Country"] = df["Country"].map({"A":"Australia","F":"Finland","I":"Indonesia"
     # Australia          9
     # Finland            7
     # Only 56064 total records returned, out of 56086 total records, discrepancy of 22.
-# df["Country"].fillna("MISSING", inplace=True)
-# print(df.loc[df['Country']=='MISSING'].index)
+df["Country"].fillna("MISSING", inplace=True)
+# print(df.loc[df['Country']=="MISSING"].index)
     # Int64Index([50385, 50386, 50387, 50388, 50389, 50390, 50391, 50392, 50393,
     #             50394, 50395, 50396, 50397, 50398, 50399, 50400, 50401, 50402,
     #             50403, 50404, 50405, 50406],
@@ -145,13 +139,15 @@ df["Country"] = df["Country"].map({"A":"Australia","F":"Finland","I":"Indonesia"
 # print(df["Customer Code"][50385:50407])
     # 22 discrepancies belong to Customer Code belong to unknown "RB01", thus drop these values instead.
 # print(len(df)) #56086 rows
-df = df["Country"].dropna()
+df.drop(df.index[50385:50407], inplace=True)
 # print(len(df)) #56064 rows
 
-
 # 4. "StkISN"
-# Remove all the NA values
-# print(df["StkISN"].isna().count())
+# print(df.isnull().sum())
+    # Remove the 544 NA values as calculated
+df.dropna(subset=["StkISN"], inplace=True)
+# print(df.isnull().sum())
+    # 0 NA values in dataset
 
 
 
@@ -203,6 +199,14 @@ df = df["Country"].dropna()
 # "Customer Code" Factor
 # Change all to Upper case
 # df['Customer Code'] = df['Customer Code'].str.upper()
+
+# df["Country"] = df["Country"].replace([["A"], "Australia"])
+# df["Country"] = df["Country"].replace([["F"], "Finland"])
+# df["Country"] = df["Country"].replace([["I"], "Indonesia"])
+# df["Country"] = df["Country"].replace([["M"], "Malaysia"])
+# df["Country"] = df["Country"].replace([["S"], "Singapore"])
+# df["Country"] = df["Country"].replace([["C"], "Non-Regular"])
+# print(df["Country"].value_counts())
 
 
 # JSON way ---
