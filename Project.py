@@ -47,6 +47,10 @@ df = pd.merge(df, cat_class_json, on = "StkISN", how="left")
     # 75%        17.400000    1519.030000    -217.500000    -154.000000
     # max    320771.530000  320771.530000   67360.810000   18420.320000
 
+    # All columns consist of negative values, as seen by their min.
+    # Column "Amt" and "Worth" have 75% of their values as negative, thus inappropriate to drop rows with negative value. Instead, it might be better to clean it by apply absolute function to it.
+    # To discover the extent of values with negative values later while cleaning.
+
 # print(df.isnull().sum()) # Number of NA values
     # Date               0
     # Type               0
@@ -149,12 +153,50 @@ df.dropna(subset=["StkISN"], inplace=True)
 # print(df.isnull().sum())
     # 0 NA values in dataset
 
+# 5. "Amt" and "Worth"
+# df_temp = df[["TUPrice", "ODAmt", "Amt", "Worth"]]
+# print(df_temp.describe())
+    # As mentioned, about 75% of data is negative. Thus, it might be appropriate to assume that we can clean these column by applying the absolute function instead.
+df.Amt = df.Amt.abs()
+df.Worth = df.Worth.abs()
+
+# 6. "TUPrice"
+# for each in df.TUPrice:
+#     if each < 0:
+#         print(each)
+    # Returned only 1 data consisting negative value
+# print(df.loc[df['TUPrice'] < 0]) # [24619]
+# print(df.loc[24619, ["TUPrice", "ODAmt", "Amt", "Worth"]])
+    # TUPrice    -0.1
+    # ODAmt     -45.3
+    # Amt        45.3
+    # Worth         0
+    # Since there are valid values in other columns, we shall not drop this row and instead, absolute the value instead
+df.TUPrice = df.TUPrice.abs()
+
+# 7. "ODAmt"
+# for each in df.ODAmt:
+#     if each < 0:
+#         print(each)
+    # Returned only 5 data consisting negative values
+# print(df.loc[df["ODAmt"] < 0].index) # [11429, 15172, 17645, 24619, 24825]
+# print(df.loc[[11429, 15172, 17645, 24619, 24825], ["TUPrice", "ODAmt", "Amt", "Worth"]])
+    #        TUPrice   ODAmt     Amt  Worth
+    # 11429    310.0 -1550.0  1550.0  930.0
+    # 15172    120.0  -240.0   240.0    0.0
+    # 17645      3.1  -387.5   387.5  337.0
+    # 24619      0.1   -45.3    45.3    0.0
+    # 24825      3.6   -28.8    28.8    8.0
+    # Since ODAmt are just negative values of Amt, we can assume that these negative values are valid but with incorrect signs. Thus, to apply the absolute function instead.
+df.ODAmt = df.ODAmt.abs()
 
 
+df_temp = df[["TUPrice", "ODAmt", "Amt", "Worth"]]
+print(df_temp.describe())
+    # Minimum value for TUPrice, ODAMT, Amt and Worth >= 0
 
 
-
-
+# df.to_csv(r"C:\\Users\\Tony\\Documents\\The Documents\\School\\BC0401 - Programming & Analytics\\Project\\stockcards1.csv")
 # Archive ==============================================================================================================
 # General Instructions---
 
