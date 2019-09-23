@@ -66,6 +66,7 @@ df = pd.merge(df, cat_class_json, on = "StkISN", how="left")
 
 # Data Cleaning ========================================================================================================
 # 1. "Type"
+# To check for any other values besides ["ICG", "ICX"]
 # print(df["Type"].unique()) # ['ICG', 'ICX']
 # print(df["Type"].value_counts())
 # ['ICG' 'ICX']
@@ -75,6 +76,7 @@ df = pd.merge(df, cat_class_json, on = "StkISN", how="left")
 # A : There are 51745 ICG and 4341 ICX transaction types = 56086 total values. Thus, there are 0 NA values and no other values to be ignored.
 
 # 2. "Cur"
+# Clean inconsistent format into acceptable values ["S$", "M$", "USD$"]
 # print(df["Cur"].unique())
 # print(df["Cur"].value_counts())
     # SIN    44738
@@ -87,19 +89,69 @@ df = pd.merge(df, cat_class_json, on = "StkISN", how="left")
     # ['US$' 'SIN' 'S$' 'M$' nan 'US' 'SGD' 'USD']
 df["Cur"] = df["Cur"].replace(["SIN","SGD"],"S$")
 df["Cur"] = df["Cur"].replace(["US$", "USD", "US"],"USD$")
-print(df["Cur"].value_counts())
+# print(df["Cur"].value_counts())
     # S$      51996
     # USD$     2456
     # M$       1300
     # Tallied successfully with previous data. To account for 334 missing values.
 df["Cur"].fillna("S$", inplace = True)
-print(df["Cur"].value_counts())
+# print(df["Cur"].value_counts())
     # S$      52330
     # USD$     2456
     # M$       1300
     # Tallied with all len(df) = 56086
 
+# 3. "Customer Code"
+# Change all NA to CASH
+df["Customer Code"].fillna("CASH", inplace=True)
+# Change all values to Upper Case, to standardise format, and replace "cash" with "CASH"
+df["Customer Code"] = df['Customer Code'].str.upper()
+# print(df["Customer Code"].value_counts())
+# IJ01       7665
+# IT23       6632
+# WALK IN    4864
+# IG01       4194
+# IT04       3271
+#            ...
+# SM03          1
+# SS29          1
+# SZ36          1
+# IT06          1
+# SZ103         1
 
+# Creating a new column to explicitly reflect customer's geographical location.
+df["Country"] = df["Customer Code"].str[0:1]
+df["Country"] = df["Country"].map({"A":"Australia","F":"Finland","I":"Indonesia","M":"Malaysia","S":"Singapore","C":"Non-Regular"})
+# df["Country"] = df["Country"].replace([["A"], "Australia"])
+# df["Country"] = df["Country"].replace([["F"], "Finland"])
+# df["Country"] = df["Country"].replace([["I"], "Indonesia"])
+# df["Country"] = df["Country"].replace([["M"], "Malaysia"])
+# df["Country"] = df["Country"].replace([["S"], "Singapore"])
+# df["Country"] = df["Country"].replace([["C"], "Non-Regular"])
+# print(df["Country"].value_counts())
+    # Indonesia      46764
+    # Non-Regular     4876
+    # Malaysia        2315
+    # Singapore       2093
+    # Australia          9
+    # Finland            7
+    # Only 56064 total records returned, out of 56086 total records, discrepancy of 22.
+# df["Country"].fillna("MISSING", inplace=True)
+# print(df.loc[df['Country']=='MISSING'].index)
+    # Int64Index([50385, 50386, 50387, 50388, 50389, 50390, 50391, 50392, 50393,
+    #             50394, 50395, 50396, 50397, 50398, 50399, 50400, 50401, 50402,
+    #             50403, 50404, 50405, 50406],
+    #            dtype='int64')
+# print(df["Customer Code"][50385:50407])
+    # 22 discrepancies belong to Customer Code belong to unknown "RB01", thus drop these values instead.
+# print(len(df)) #56086 rows
+df = df["Country"].dropna()
+# print(len(df)) #56064 rows
+
+
+# 4. "StkISN"
+# Remove all the NA values
+# print(df["StkISN"].isna().count())
 
 
 
@@ -108,6 +160,37 @@ print(df["Cur"].value_counts())
 
 
 # Archive ==============================================================================================================
+# General Instructions---
+
+# Let's break this project down into 3 stages to better visualise milestones. Some of the stages don't need face to face collaboration (e.g. data cleaning, report), while some might be beneficial (e.g. creating a relevant customer loyalty program, presentation).
+#
+# Since it is sequential, we need to clear a stage first in order to proceed to the next. Thus, everyone needs to work on each stage collectively by an agreed timeline to ensure the project is moving.
+#
+# 1. Data Cleaning
+# a) Prove that column 'Type' has only "ICX" and "ICG"
+# b) Filter column 'Cur' to only " ", USD, S$, M$
+# (levels(DT$Cur)
+# [1] ""    "M$"  "S$"  "SGD" "SIN" "US"  "US$" "USD")
+# c) For column 'Customer Code', change NA values to 'Cash' to prevent misinterpretation for missing values.
+# d) Remove NA values for column 'StkISN'
+# e) To left join stockscard.csv (left) with cat_class.json (right) on StockISN
+# f) Remove irrelevant data that is not within scope of the project
+#
+# 2. Application
+# - Market analytics: Customer buying patterns, geographical distribution of transactions, stocks item analysis
+# - Create an appropriate customer loyalty program (regional focus)
+# - Create a guide for item stockup
+# - Create cmd-line query application to query data, and perform statistical summaries (data up to 5 years)
+#
+# 3. Report and Presentation
+# -  Analysis
+# - Coding Structure
+# - Design Process
+# - Reflection of what we have learnt in this course
+# - Programming codes (Appendix)
+#
+# Right now we are at stage 1 of data cleaning, and we need to prep the data to apply it later. I summarised the project instructions vaguely above. We can put our names into each of the tasks under data cleaning and 分工合作 lor, then we join the code together once we are done with stage 1.
+
 
 # Data Cleaning ========================================================================================================
 # KIV---
@@ -116,6 +199,10 @@ print(df["Cur"].value_counts())
 
 # "Cur" column
 # df["Cur"] = df["Cur"].map({"SIN":"S$", "S$":"S$", "US$":"USD$", "M$":"M$", "USD":"USD$", "SGD":"S$", "US":"USD$"})
+
+# "Customer Code" Factor
+# Change all to Upper case
+# df['Customer Code'] = df['Customer Code'].str.upper()
 
 
 # JSON way ---
