@@ -47,7 +47,7 @@ df = pd.merge(df, cat_class_json, on = "StkISN", how="left")
     # 75%        17.400000    1519.030000    -217.500000    -154.000000
     # max    320771.530000  320771.530000   67360.810000   18420.320000
 
-    # All columns consist of negative values, as seen by their min.
+    # All columns in the context of price has negative values, as seen from their min.
     # Column "Amt" and "Worth" have 75% of their values as negative, thus inappropriate to drop rows with negative value. Instead, it might be better to clean it by apply absolute function to it.
     # To discover the extent of values with negative values later while cleaning.
 
@@ -145,13 +145,17 @@ df["Country"].fillna("MISSING", inplace=True)
 # print(len(df)) #56086 rows
 df.drop(df.index[50385:50407], inplace=True)
 # print(len(df)) #56064 rows
+df.reset_index(inplace=True) # Reset index after dropping rows
 
 # 4. "StkISN"
 # print(df.isnull().sum())
     # Remove the 544 NA values as calculated
+# print(len(df)) #56064 rows
 df.dropna(subset=["StkISN"], inplace=True)
 # print(df.isnull().sum())
     # 0 NA values in dataset
+# print(len(df)) #55520 rows
+df.reset_index(inplace=True) # Reset index after dropping rows
 
 # 5. "Amt" and "Worth"
 # df_temp = df[["TUPrice", "ODAmt", "Amt", "Worth"]]
@@ -190,10 +194,27 @@ df.TUPrice = df.TUPrice.abs()
     # Since ODAmt are just negative values of Amt, we can assume that these negative values are valid but with incorrect signs. Thus, to apply the absolute function instead.
 df.ODAmt = df.ODAmt.abs()
 
-
-df_temp = df[["TUPrice", "ODAmt", "Amt", "Worth"]]
-print(df_temp.describe())
+# df_temp = df[["TUPrice", "ODAmt", "Amt", "Worth"]]
+# print(df_temp.describe())
     # Minimum value for TUPrice, ODAMT, Amt and Worth >= 0
+
+# 8. Cleaning 0 values
+# print((df[["TUPrice", "ODAmt", "Amt","Worth"]]==0).sum())
+    # TUPrice    1265
+    # ODAmt      1043
+    # Amt        1019
+    # Worth       445
+    # There are many missing values or values with 0 in these 4 columns. It may not be appropriate to drop all missing value data, despite it only being (1265/56064=2.25%) of overall dataset.
+
+# print((df.groupby(["TUPrice", "ODAmt", "Amt", "Worth"]).size()))
+    # 373 pairs of 0 values for all 4 columns observed. Drop these rows as there is no way of estimating these values, and are thus meaningless for the purpose of analytics.
+# print(len(df)) #55520 rows
+zero_values = df[(df["TUPrice"]==0) & (df["ODAmt"]==0) & (df["Amt"]==0) & (df["Worth"]==0)].index
+df.drop(zero_values, inplace=True)
+# print(len(df)) # 55147 rows
+df.reset_index(drop=True) # Reset index after dropping rows
+
+
 
 
 # df.to_csv(r"C:\\Users\\Tony\\Documents\\The Documents\\School\\BC0401 - Programming & Analytics\\Project\\stockcards1.csv")
