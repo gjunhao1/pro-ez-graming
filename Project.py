@@ -15,7 +15,7 @@ cat_class_json.rename(columns={'StockISN':'StkISN'}, inplace=True)
 df = pd.merge(df, cat_class_json, on = "StkISN", how="left")
 # print(df)
 
-# Key information of file ==============================================================================================
+# Data Exploration ==============================================================================================
 # print(df.index)
     # dtype='int64', length=56086)
 # print(len(df))
@@ -65,19 +65,21 @@ df = pd.merge(df, cat_class_json, on = "StkISN", how="left")
     # StkISN           544
     # CatCode          544
 
-
+    # To resolve missing values by
+    # 1. Estimating with central tendency methods (mean, mode)
+    # 2. To drop rows containing missing values
 
 
 # Data Cleaning ========================================================================================================
 # 1. "Type"
-# To check for any other values besides ["ICG", "ICX"]
+    # To check for any other values besides ["ICG", "ICX"]
 # print(df["Type"].unique()) # ['ICG', 'ICX']
 # print(df["Type"].value_counts())
-# ['ICG' 'ICX']
-# ICG    51745
-# ICX     4341
-# Name: Type, dtype: int64
-# A : There are 51745 ICG and 4341 ICX transaction types = 56086 total values. Thus, there are 0 NA values and no other values to be ignored.
+    # ['ICG' 'ICX']
+    # ICG    51745
+    # ICX     4341
+    # Name: Type, dtype: int64
+    # A : There are 51745 ICG and 4341 ICX transaction types = 56086 total values. Thus, there are 0 NA values and no other values to be ignored.
 
 # 2. "Cur"
 # Clean inconsistent format into acceptable values ["S$", "M$", "USD$"]
@@ -91,25 +93,35 @@ df = pd.merge(df, cat_class_json, on = "StkISN", how="left")
     # SGD       12
     # US         5
     # ['US$' 'SIN' 'S$' 'M$' nan 'US' 'SGD' 'USD']
+
+    # 7 levels of value for categorical variable, inclusive missing data.
+    #Replace unacceptable formats to acceptable formats
+
 df["Cur"] = df["Cur"].replace(["SIN","SGD"],"S$")
 df["Cur"] = df["Cur"].replace(["US$", "USD", "US"],"USD$")
 # print(df["Cur"].value_counts())
     # S$      51996
     # USD$     2456
     # M$       1300
-    # Tallied successfully with previous data. To account for 334 missing values.
+    # Tallied successfully with previous data. To account for the remaining 334 missing values.
+
 df["Cur"].fillna("S$", inplace = True)
 # print(df["Cur"].value_counts())
     # S$      52330
     # USD$     2456
     # M$       1300
-    # Tallied with all len(df) = 56086
+    # Tallied with total rows of len(df) = 56086
 
 # 3. "Customer Code"
-# Change all NA to CASH
-df["Customer Code"].fillna("CASH", inplace=True)
-# Change all values to Upper Case, to standardise format, and replace "cash" with "CASH"
+    # Explore the different types of values
+# print(df["Customer Code"].value_counts())
+    # There are inconsistencies in terms of capitalization.
+    # Change all values to Upper Case to standardise format.
+
 df["Customer Code"] = df['Customer Code'].str.upper()
+    # Change all NA to CASH
+df["Customer Code"].fillna("CASH", inplace=True)
+
 # print(df["Customer Code"].value_counts())
 # IJ01       7665
 # IT23       6632
@@ -141,78 +153,144 @@ df["Country"].fillna("MISSING", inplace=True)
     #             50403, 50404, 50405, 50406],
     #            dtype='int64')
 # print(df["Customer Code"][50385:50407])
-    # 22 discrepancies belong to Customer Code belong to unknown "RB01", thus drop these values instead.
+    # 22 discrepancies belong to Customer Code belong to unknown "RB01", thus drop these values as there are no ways to estimate or replace this value.
 # print(len(df)) #56086 rows
 df.drop(df.index[50385:50407], inplace=True)
 # print(len(df)) #56064 rows
-df.reset_index(inplace=True) # Reset index after dropping rows
+df.reset_index(inplace=True) # Resetting index to ensure index is a running sequence.
 
 # 4. "StkISN"
 # print(df.isnull().sum())
-    # Remove the 544 NA values as calculated
+    # NA values in multiple attributes
 # print(len(df)) #56064 rows
 df.dropna(subset=["StkISN"], inplace=True)
 # print(df.isnull().sum())
-    # 0 NA values in dataset
-# print(len(df)) #55520 rows
-df.reset_index(inplace=True) # Reset index after dropping rows
+    # 0 NA values remaining in dataset
+# print(len(df)) # 55520 rows remiaining in dataset after dropping rows.
+df.reset_index(inplace=True) # Resetting index to ensure index is a running sequence.
 
-# 5. "Amt" and "Worth"
-# df_temp = df[["TUPrice", "ODAmt", "Amt", "Worth"]]
-# print(df_temp.describe())
-    # As mentioned, about 75% of data is negative. Thus, it might be appropriate to assume that we can clean these column by applying the absolute function instead.
-df.Amt = df.Amt.abs()
-df.Worth = df.Worth.abs()
+# 5. "TUPrice", "ODAmt", "Amt", "Worth"
+    # Cleaning 0 values
+# print((df[["TUPrice", "ODAmt", "Amt","Worth"]]==0).sum())
+    # TUPrice    1265
+    # ODAmt      1043
+    # Amt        1019
+    # Worth       445
+    # There are many missing values or with value '0' in these 4 columns. It may not be appropriate to drop all rows and assume it as missing values, despite it is representing only (1265/56064=2.25%) of overall dataset.
+
+# print((df.groupby(["TUPrice", "ODAmt", "Amt", "Worth"]).size()))
+    # The first row shows 373 pairs of 0 values for all 4 columns observed. To drop these rows as there is no possible way of estimating these values via referencing, and are thus meaningless for the purpose of analytics.
+# print(len(df)) # 55520 rows
+zero_values = df[(df["TUPrice"]==0) & (df["ODAmt"]==0) & (df["Amt"]==0) & (df["Worth"]==0)].index
+df.drop(zero_values, inplace=True)
+# print(len(df)) # 55147 rows
+df.reset_index(drop=True) # Resetting index to ensure index is a running sequence.
+
+    # Detecting outliers
+import matplotlib.pyplot as plt
+# plt.scatter(x=df.index, y=df.ODAmt)
+# plt.scatter(x=df.index, y=df.Amt)
+# plt.scatter(x=df.index, y=df.Worth)
+# plt.scatter(x=df.index, y=df.TUPrice)
+
+    # Observed visually that there are many overlapping outliers near the vertical slice where index is close to 20000.
+    # Thus, to attempt to further explore these outliers.
+
+    # Finding outliers
+import numpy as np
+import pandas as pd
+outliers = []
+
+def detect_outlier(col):
+    threshold = 3
+    mean_1 = np.mean(col)
+    std_1 = np.std(col)
+
+    for y in col:
+        z_score = (y - mean_1) / std_1
+        if np.abs(z_score) > threshold:
+            outliers.append(y)
+    return outliers
+
+# print(detect_outlier(df.TUPrice))
+    # [19813.53, 300780.72, 320771.53, 101646.24, 103921.19, 228352.38, 128183.83, 186114.13, 232569.5, 198813.88, 205085.25, 91659.88]
+
+    # Total of 12 outliers above the z-value of 3 for column "TUPrice". From empirical rule, these data exceeds the 99.7% of the confidence interval range, assuming TUPrice follows normal distribution.
+    # Hence, we should drop these outliers for the purpose of more meaningful, and less skewed analysis.
+
+    # Need to drop these outliers
 
 # 6. "TUPrice"
 # for each in df.TUPrice:
 #     if each < 0:
-#         print(each)
+#         print("The negative value is ", each)
     # Returned only 1 data consisting negative value
-# print(df.loc[df['TUPrice'] < 0]) # [24619]
-# print(df.loc[24619, ["TUPrice", "ODAmt", "Amt", "Worth"]])
-    # TUPrice    -0.1
-    # ODAmt     -45.3
-    # Amt        45.3
-    # Worth         0
-    # Since there are valid values in other columns, we shall not drop this row and instead, absolute the value instead
-df.TUPrice = df.TUPrice.abs()
+# print(df.loc[df['TUPrice'] < 0]) # [24515]
+# print(df.loc[24515, ["TUPrice", "ODAmt", "Amt", "Worth", "StkISN"]])
+    # TUPrice - 0.1
+    # ODAmt - 45.3
+    # Amt - 45.3
+    # Worth - 0
+    # StkISN - 10445
+    # Since there are appropriate values in other rows, we should not drop this row, but instead estimate the TUPrice with its StkISN by means of averaging.
+# print("The mean of StkISN = 10445 is: ", df.TUPrice[df['StkISN'] == 10445].mean())
+df["TUPrice"] = df["TUPrice"].replace([float(-0.1), float(123)])
+# print(df.loc[24515, ["TUPrice", "ODAmt", "Amt", "Worth", "StkISN"]])
+# Wrong replacement
 
-# 7. "ODAmt"
+# 8. "ODAmt"
+    # Locating negative values
 # for each in df.ODAmt:
 #     if each < 0:
 #         print(each)
     # Returned only 5 data consisting negative values
-# print(df.loc[df["ODAmt"] < 0].index) # [11429, 15172, 17645, 24619, 24825]
-# print(df.loc[[11429, 15172, 17645, 24619, 24825], ["TUPrice", "ODAmt", "Amt", "Worth"]])
+od_negative = df.loc[df["ODAmt"] < 0].index
+# print(df.loc[od_negative, ["TUPrice", "ODAmt", "Amt", "Worth"]])
     #        TUPrice   ODAmt     Amt  Worth
     # 11429    310.0 -1550.0  1550.0  930.0
     # 15172    120.0  -240.0   240.0    0.0
     # 17645      3.1  -387.5   387.5  337.0
     # 24619      0.1   -45.3    45.3    0.0
     # 24825      3.6   -28.8    28.8    8.0
-    # Since ODAmt are just negative values of Amt, we can assume that these negative values are valid but with incorrect signs. Thus, to apply the absolute function instead.
+    # Since we can observe that ODAmt are the exact values but only with negative signs as compared to Amt, we should be able to assume that these negative values are valid but with erroneously entered with incorrect signs.  Thus, to apply the absolute function instead.
 df.ODAmt = df.ODAmt.abs()
+# print(df.loc[od_negative, ["TUPrice", "ODAmt", "Amt", "Worth"]])
+    #        TUPrice   ODAmt     Amt  Worth
+    # 11390    310.0  1550.0  1550.0  930.0
+    # 15107    120.0   240.0   240.0    0.0
+    # 17579      3.1   387.5   387.5  337.0
+    # 24515      3.4    45.3    45.3    0.0
+    # 24721      3.6    28.8    28.8    8.0
 
+    # Cleaning zero values
+# print("There are a total of", df.ODAmt[(df.ODAmt==df.Amt) & (df.Cur=="S$")].count(), "rows of data when ODAmt = Amt when Currency is S$.")
+    # There is a significant amount of data (51413 rows) to show that when Currency = "S$", ODAmt can be estimated with Amt.
+    # Thus, we should replace the zero values in ODAmt with values of Amt.
+print(df.ODAmt[(df.ODAmt==0) & (df.Cur=="S$")].count()) # 669 rows
+df.ODAmt[(df.ODAmt==0) & (df.Cur=="S$")] = df.Amt
+print(df.ODAmt[(df.ODAmt==0) & (df.Cur=="S$")].count()) # 645 rows
+# To find a way to skip the warning.
+
+# 8. "Amt" and "Worth"
+    # Locating negative values
 # df_temp = df[["TUPrice", "ODAmt", "Amt", "Worth"]]
 # print(df_temp.describe())
-    # Minimum value for TUPrice, ODAMT, Amt and Worth >= 0
+# plt.plot(df.Amt)
+    # As mentioned, about 75% of data is negative for both "Amt" and "Worth" column. Hence,
+    # Dropping the rows is not an option, as this will greatly reduce our dataset.
+    # It might thus be appropriate to assume that we can clean these column by applying the absolute function instead, as most of the data appears to have been recorded with a negative sign.
 
-# 8. Cleaning 0 values
-# print((df[["TUPrice", "ODAmt", "Amt","Worth"]]==0).sum())
-    # TUPrice    1265
-    # ODAmt      1043
-    # Amt        1019
-    # Worth       445
-    # There are many missing values or values with 0 in these 4 columns. It may not be appropriate to drop all missing value data, despite it only being (1265/56064=2.25%) of overall dataset.
+    # Applying the absolute function
+df.Amt = df.Amt.abs()
+df.Worth = df.Worth.abs()
+# plt.plot(df.Amt)
+    # Column "Amt" and "Worth" are standardized to positive signs for analytics purposes.
 
-# print((df.groupby(["TUPrice", "ODAmt", "Amt", "Worth"]).size()))
-    # 373 pairs of 0 values for all 4 columns observed. Drop these rows as there is no way of estimating these values, and are thus meaningless for the purpose of analytics.
-# print(len(df)) #55520 rows
-zero_values = df[(df["TUPrice"]==0) & (df["ODAmt"]==0) & (df["Amt"]==0) & (df["Worth"]==0)].index
-df.drop(zero_values, inplace=True)
-# print(len(df)) # 55147 rows
-df.reset_index(drop=True) # Reset index after dropping rows
+
+
+
+
+
 
 
 
