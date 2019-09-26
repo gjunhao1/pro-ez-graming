@@ -157,7 +157,7 @@ df["Country"].fillna("MISSING", inplace=True)
 # print(len(df)) #56086 rows
 df.drop(df.index[50385:50407], inplace=True)
 # print(len(df)) #56064 rows
-df.reset_index(inplace=True) # Resetting index to ensure index is a running sequence.
+df.reset_index(drop=True) # Resetting index to ensure index is a running sequence.
 
 # 4. "StkISN"
 # print(df.isnull().sum())
@@ -167,7 +167,7 @@ df.dropna(subset=["StkISN"], inplace=True)
 # print(df.isnull().sum())
     # 0 NA values remaining in dataset
 # print(len(df)) # 55520 rows remiaining in dataset after dropping rows.
-df.reset_index(inplace=True) # Resetting index to ensure index is a running sequence.
+df.reset_index(drop=True) # Resetting index to ensure index is a running sequence.
 
 # 5. "TUPrice", "ODAmt", "Amt", "Worth"
     # Cleaning 0 values
@@ -199,6 +199,7 @@ import matplotlib.pyplot as plt
     # Finding outliers
 import numpy as np
 import pandas as pd
+
 outliers = []
 
 def detect_outlier(col):
@@ -210,32 +211,50 @@ def detect_outlier(col):
         z_score = (y - mean_1) / std_1
         if np.abs(z_score) > threshold:
             outliers.append(y)
-    return outliers
+            # print(outliers)
+    return pd.DataFrame({'TUPrice': outliers})
 
-# print(detect_outlier(df.TUPrice))
-    # [19813.53, 300780.72, 320771.53, 101646.24, 103921.19, 228352.38, 128183.83, 186114.13, 232569.5, 198813.88, 205085.25, 91659.88]
-
+outlier_df = detect_outlier(df.TUPrice)
+    # Create a dataframe containing all outliers of TUPrice with z-values more than 3.
     # Total of 12 outliers above the z-value of 3 for column "TUPrice". From empirical rule, these data exceeds the 99.7% of the confidence interval range, assuming TUPrice follows normal distribution.
     # Hence, we should drop these outliers for the purpose of more meaningful, and less skewed analysis.
 
-    # Need to drop these outliers
+print(df[18845:18855])
+
+temp_df = df[['index','TUPrice']]
+temp1_df = pd.merge(outlier_df, temp_df, on = "TUPrice", how="left")
+# print(temp1_df)
+    # Find the index for the outliers captured in previous dataframe.
+
+# print(len(df)) # 55147 rows
+list1 = temp1_df["index"].tolist()
+df.drop(index=list1, inplace=True)
+# print(len(df)) # 55135 rows
+df.reset_index(drop=True)
+    # Dropped a total of 12 rows, from the original 55147 rows to 55135 rows.
+    # Resetting index to ensure index is a running sequence.
+# plt.scatter(x=df.index, y=df.TUPrice)
+    # Dropped the wrong rows however
+
 
 # 6. "TUPrice"
 # for each in df.TUPrice:
 #     if each < 0:
 #         print("The negative value is ", each)
     # Returned only 1 data consisting negative value
-# print(df.loc[df['TUPrice'] < 0]) # [24515]
-# print(df.loc[24515, ["TUPrice", "ODAmt", "Amt", "Worth", "StkISN"]])
+# print(df.loc[df['TUPrice'] < 0]) # [24439]
+# print(df.loc[24439, ["TUPrice", "ODAmt", "Amt", "Worth", "StkISN"]])
     # TUPrice - 0.1
     # ODAmt - 45.3
     # Amt - 45.3
     # Worth - 0
     # StkISN - 10445
+
+    # There is only 1 negative value under "TUPrice".
     # Since there are appropriate values in other rows, we should not drop this row, but instead estimate the TUPrice with its StkISN by means of averaging.
 # print("The mean of StkISN = 10445 is: ", df.TUPrice[df['StkISN'] == 10445].mean())
-df["TUPrice"] = df["TUPrice"].replace([float(-0.1), float(123)])
-# print(df.loc[24515, ["TUPrice", "ODAmt", "Amt", "Worth", "StkISN"]])
+df["TUPrice"] = df["TUPrice"].replace([-0.1, 1.35])
+# print(df.loc[24439, ["TUPrice", "ODAmt", "Amt", "Worth", "StkISN"]])
 # Wrong replacement
 
 # 8. "ODAmt"
@@ -261,6 +280,8 @@ df.ODAmt = df.ODAmt.abs()
     # 17579      3.1   387.5   387.5  337.0
     # 24515      3.4    45.3    45.3    0.0
     # 24721      3.6    28.8    28.8    8.0
+
+    # ODAmt have 0 remaining negative values.
 
     # Cleaning zero values
 # print("There are a total of", df.ODAmt[(df.ODAmt==df.Amt) & (df.Cur=="S$")].count(), "rows of data when ODAmt = Amt when Currency is S$.")
