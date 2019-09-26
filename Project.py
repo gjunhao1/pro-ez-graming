@@ -219,8 +219,8 @@ outlier_df = detect_outlier(df.TUPrice)
     # Total of 12 outliers above the z-value of 3 for column "TUPrice". From empirical rule, these data exceeds the 99.7% of the confidence interval range, assuming TUPrice follows normal distribution.
     # Hence, we should drop these outliers for the purpose of more meaningful, and less skewed analysis.
 
-print(df[18845:18855])
-
+df.reset_index(inplace=True)
+df['index'] = np.arange(len(df))
 temp_df = df[['index','TUPrice']]
 temp1_df = pd.merge(outlier_df, temp_df, on = "TUPrice", how="left")
 # print(temp1_df)
@@ -234,7 +234,7 @@ df.reset_index(drop=True)
     # Dropped a total of 12 rows, from the original 55147 rows to 55135 rows.
     # Resetting index to ensure index is a running sequence.
 # plt.scatter(x=df.index, y=df.TUPrice)
-    # Dropped the wrong rows however
+    # Dataset is corrected as TUPric spans to approximately 5000 only.
 
 
 # 6. "TUPrice"
