@@ -287,10 +287,12 @@ df.ODAmt = df.ODAmt.abs()
 # print("There are a total of", df.ODAmt[(df.ODAmt==df.Amt) & (df.Cur=="S$")].count(), "rows of data when ODAmt = Amt when Currency is S$.")
     # There is a significant amount of data (51413 rows) to show that when Currency = "S$", ODAmt can be estimated with Amt.
     # Thus, we should replace the zero values in ODAmt with values of Amt.
+pd.options.mode.chained_assignment = None
 print(df.ODAmt[(df.ODAmt==0) & (df.Cur=="S$")].count()) # 669 rows
 df.ODAmt[(df.ODAmt==0) & (df.Cur=="S$")] = df.Amt
 print(df.ODAmt[(df.ODAmt==0) & (df.Cur=="S$")].count()) # 645 rows
-# To find a way to skip the warning.
+pd.options.mode.chained_assignment = 'warn'
+# To find a way to skip the warning. --> https://stackoverflow.com/questions/20625582/how-to-deal-with-settingwithcopywarning-in-pandas
 
 # 8. "Amt" and "Worth"
     # Locating negative values
